@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}Investigations{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Investigations</h1>
+
+<div class="mb-3 d-flex flex-wrap gap-2">
+  <a class="btn btn-sm {{ 'btn-info' if not current else 'btn-outline-secondary' }}" href="{{ url_for('incidents') }}">All</a>
+  {% for s in statuses %}
+    <a class="btn btn-sm {{ 'btn-info' if current == s else 'btn-outline-secondary' }}" href="{{ url_for('incidents', status=s) }}">{{ s }}</a>
+  {% endfor %}
+</div>
+
+<div class="sx-card p-3">
+  <div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead><tr><th>Alert</th><th>Severity</th><th>Rule</th><th>Source IP</th><th>Status</th><th>Assigned</th><th>Updated</th><th>Notes</th></tr></thead>
+    <tbody>
+    {% for i in incidents %}
+      <tr>
+        <td><a href="{{ url_for('alert_detail', alert_id=i.alert_id) }}">#{{ i.alert_id }}</a></td>
+        <td><span class="badge sev-{{ i.severity|lower }}">{{ i.severity }}</span></td>
+        <td>{{ i.rule_name }}</td>
+        <td class="font-monospace">{{ i.source_ip }}</td>
+        <td><span class="badge status-{{ i.status|lower|replace(' ', '-') }}">{{ i.status }}</span></td>
+        <td>{{ i.assigned_to or '—' }}</td>
+        <td class="small">{{ i.updated_at|ts }}</td>
+        <td class="small text-secondary">{{ (i.notes[:60] ~ '…') if i.notes|length > 60 else (i.notes or '—') }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="8" class="text-secondary">Nothing here.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

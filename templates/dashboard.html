@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">SOC Dashboard</h1>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg-3"><div class="sx-card sx-stat h-100"><div class="sx-stat-label">Total alerts</div><div class="sx-stat-value">{{ stats.total_alerts }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="sx-card sx-stat h-100 sx-stat-high"><div class="sx-stat-label">High / Critical</div><div class="sx-stat-value">{{ stats.high_alerts }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="sx-card sx-stat h-100"><div class="sx-stat-label">Open investigations</div><div class="sx-stat-value">{{ stats.open_investigations }}</div></div></div>
+  <div class="col-6 col-lg-3"><div class="sx-card sx-stat h-100"><div class="sx-stat-label">Events analysed</div><div class="sx-stat-value">{{ stats.total_events }}</div><div class="sx-stat-sub">{{ stats.failed_logins }} failed logins</div></div></div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4"><div class="sx-card p-3 h-100"><h2 class="h6">Alerts by severity</h2><canvas id="sevChart" height="220"></canvas></div></div>
+  <div class="col-lg-8"><div class="sx-card p-3 h-100"><h2 class="h6">Alert trend (by hour first seen)</h2><canvas id="trendChart" height="110"></canvas></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="sx-card p-3">
+      <div class="d-flex justify-content-between mb-2"><h2 class="h6 mb-0">Recent activity</h2><a href="{{ url_for('alerts') }}" class="small">All alerts</a></div>
+      <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Severity</th><th>Rule</th><th>Source IP</th><th>First seen</th><th>Status</th></tr></thead>
+        <tbody>
+        {% for a in recent %}
+          <tr>
+            <td><span class="badge sev-{{ a.severity|lower }}">{{ a.severity }}</span></td>
+            <td><a href="{{ url_for('alert_detail', alert_id=a.id) }}">{{ a.rule_name }}</a></td>
+            <td class="font-monospace">{{ a.source_ip }}</td>
+            <td class="small">{{ a.first_seen|ts }}</td>
+            <td><span class="badge status-{{ a.status|lower|replace(' ', '-') }}">{{ a.status }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="5" class="text-secondary">No alerts yet. Ingest logs to start detection.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="sx-card p-3">
+      <h2 class="h6">Top failed-login sources</h2>
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Source IP</th><th class="text-end">Failures</th></tr></thead>
+        <tbody>
+        {% for t in stats.top_ips %}
+          <tr><td class="font-monospace">{{ t.ip }}</td><td class="text-end">{{ t.failures }}</td></tr>
+        {% else %}
+          <tr><td colspan="2" class="text-secondary">No data.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script id="stats-data" type="application/json">{{ stats|tojson }}</script>
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}

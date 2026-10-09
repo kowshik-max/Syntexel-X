@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Alert #{{ alert.id }}{% endblock %}
+{% block content %}
+<nav class="small mb-2"><a href="{{ url_for('alerts') }}">&larr; Alerts</a></nav>
+<div class="d-flex flex-wrap justify-content-between align-items-start mb-3 gap-2">
+  <div>
+    <h1 class="h3 mb-1">{{ alert.rule_name }}</h1>
+    <span class="badge sev-{{ alert.severity|lower }}">{{ alert.severity }}</span>
+    <span class="badge status-{{ alert.status|lower|replace(' ', '-') }}">{{ alert.status }}</span>
+    <span class="text-secondary small ms-2">Alert #{{ alert.id }} &middot; {{ alert.event_count }} event(s)</span>
+  </div>
+  <a class="btn btn-sm btn-outline-info" href="{{ url_for('alert_report', alert_id=alert.id) }}">Download incident report (.md)</a>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="sx-card p-3 mb-3">
+      <h2 class="h6">What was detected</h2>
+      <p class="mb-2">{{ alert.description }}</p>
+      <dl class="row small mb-0">
+        <dt class="col-sm-3">Source IP</dt><dd class="col-sm-9 font-monospace">{{ alert.source_ip }}</dd>
+        <dt class="col-sm-3">Account(s)</dt><dd class="col-sm-9">{{ alert.username or 'n/a' }}</dd>
+        <dt class="col-sm-3">Window</dt><dd class="col-sm-9">{{ alert.first_seen|ts }} &rarr; {{ alert.last_seen|ts }}</dd>
+        <dt class="col-sm-3">MITRE ATT&amp;CK</dt>
+        <dd class="col-sm-9">{% if alert.mitre_id %}{{ alert.mitre_id }} &mdash; {{ alert.mitre_name }}<br><span class="text-secondary">Possible match based on observed behaviour; not a confirmed attack.</span>{% else %}Not applicable{% endif %}</dd>
+        <dt class="col-sm-3">Potential impact</dt><dd class="col-sm-9">{{ alert.impact }}</dd>
+        <dt class="col-sm-3">Next steps</dt><dd class="col-sm-9">{{ alert.recommended_action }}</dd>
+      </dl>
+    </div>
+
+    <div class="sx-card p-3">
+      <h2 class="h6">Evidence (original events)</h2>
+      <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead><tr><th>Timestamp</th><th>Event</th><th>User</th><th>Source IP</th></tr></thead>
+        <tbody>
+        {% for e in alert.evidence %}
+          {% if e.errors is defined %}
+            <tr><td colspan="4" class="small"><span class="text-warning">Invalid record:</span> {{ e.errors|join(', ') }}<br><code>{{ e.record|tojson }}</code></td></tr>
+          {% else %}
+            <tr>
+              <td class="font-monospace small">{{ e.timestamp|ts }}</td>
+              <td><span class="badge {{ 'bg-danger-subtle text-danger-emphasis' if e.event_type == 'login_failed' else 'bg-success-subtle text-success-emphasis' }}">{{ e.event_type }}</span></td>
+              <td>{{ e.username }}</td>
+              <td class="font-monospace">{{ e.source_ip }}</td>
+            </tr>
+          {% endif %}
+        {% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="sx-card p-3">
+      <h2 class="h6">Investigation</h2>
+      <form method="post" action="{{ url_for('alert_update', alert_id=alert.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <label class="form-label small">Status</label>
+        <select name="status" class="form-select form-select-sm mb-2">
+          {% for s in statuses %}<option {% if alert.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+        </select>
+        <label class="form-label small">Assigned to</label>
+        <input name="assigned_to" maxlength="80" value="{{ alert.assigned_to }}" class="form-control form-control-sm mb-2">
+        <label class="form-label small">Analyst notes</label>
+        <textarea name="notes" rows="7" maxlength="4000" class="form-control form-control-sm mb-2" placeholder="What did you check? What did you conclude?">{{ alert.notes }}</textarea>
+        <button class="btn btn-info btn-sm w-100">Save investigation</button>
+        <div class="small text-secondary mt-2">Last updated {{ alert.updated_at|ts }}</div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

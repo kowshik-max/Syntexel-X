@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Alerts{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Alerts</h1>
+
+<form class="sx-card p-3 mb-3" method="get" action="{{ url_for('alerts') }}">
+  <div class="row g-2 align-items-end">
+    <div class="col-6 col-md-2">
+      <label class="form-label small">Severity</label>
+      <select name="severity" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for s in ['Critical', 'High', 'Medium', 'Low'] %}<option {% if filters.severity == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label small">Source IP</label>
+      <input name="source_ip" value="{{ filters.source_ip }}" class="form-control form-control-sm" placeholder="e.g. 198.51">
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label small">Rule</label>
+      <select name="rule" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for r in rules %}<option {% if filters.rule == r %}selected{% endif %}>{{ r }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label small">Status</label>
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All</option>
+        {% for s in statuses %}<option {% if filters.status == s %}selected{% endif %}>{{ s }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-6 col-md-2">
+      <label class="form-label small">Date</label>
+      <input type="date" name="date" value="{{ filters.date }}" class="form-control form-control-sm">
+    </div>
+    <div class="col-12 col-md-1 d-flex gap-1">
+      <button class="btn btn-sm btn-info flex-fill">Filter</button>
+      <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('alerts') }}">Reset</a>
+    </div>
+  </div>
+</form>
+
+<div class="sx-card p-3">
+  <div class="small text-secondary mb-2">{{ alerts|length }} alert(s)</div>
+  <div class="table-responsive">
+  <table class="table table-hover align-middle mb-0">
+    <thead><tr><th>#</th><th>Severity</th><th>Rule</th><th>Source IP</th><th>Account(s)</th><th>Events</th><th>First seen</th><th>MITRE</th><th>Status</th></tr></thead>
+    <tbody>
+    {% for a in alerts %}
+      <tr>
+        <td>{{ a.id }}</td>
+        <td><span class="badge sev-{{ a.severity|lower }}">{{ a.severity }}</span></td>
+        <td><a href="{{ url_for('alert_detail', alert_id=a.id) }}">{{ a.rule_name }}</a></td>
+        <td class="font-monospace">{{ a.source_ip }}</td>
+        <td class="small">{{ a.username }}</td>
+        <td>{{ a.event_count }}</td>
+        <td class="small">{{ a.first_seen|ts }}</td>
+        <td class="small">{{ a.mitre_id or '—' }}</td>
+        <td><span class="badge status-{{ a.status|lower|replace(' ', '-') }}">{{ a.status }}</span></td>
+      </tr>
+    {% else %}
+      <tr><td colspan="9" class="text-secondary">No alerts match these filters.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}
